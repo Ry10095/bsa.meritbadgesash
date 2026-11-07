@@ -63,12 +63,15 @@
     <!-- Right Column: Merit Badge Palette -->
     <section class="lg:col-span-5 p-4 md:p-6 flex flex-col bg-white overflow-hidden max-h-[85vh]">
       
-      <!-- Palette Search Header -->
-      <div class="mb-4">
-        <div class="relative">
+      <!-- Palette Search & Clear Header -->
+      <div class="mb-4 flex gap-2">
+        <div class="relative flex-1">
           <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-stone-400 text-sm"></i>
           <input type="text" id="search-input" placeholder="Search merit badges..." class="w-full pl-10 pr-4 py-2 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white transition">
         </div>
+        <button id="clear-slot-btn" class="px-3.5 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 shadow-sm whitespace-nowrap">
+          <i class="fa-solid fa-ban"></i> Clear Slot
+        </button>
       </div>
 
       <!-- Badge Palette Grid Scrollable Container -->
@@ -84,9 +87,8 @@
     const ACTIVE_ROWS = 16;
     const TOTAL_SLOTS = ACTIVE_ROWS * COLS;
 
-    // All 143 badges sorted strictly alphabetically by name plus a blank
-const MERIT_BADGES = [
-      { id: "empty", name: "Clear Slot", imageUrl: "" },
+    // All 143 badges sorted strictly alphabetically by name
+    const MERIT_BADGES = [
       { id: "american_business", name: "American Business", imageUrl: "mbs/AmericanBusiness-1.webp" },
       { id: "american_cultures", name: "American Cultures", imageUrl: "mbs/AmericanCultures.webp" },
       { id: "american_heritage", name: "American Heritage", imageUrl: "mbs/AmericanHeritage.webp" },
@@ -416,6 +418,7 @@ const MERIT_BADGES = [
       const flipBtn = document.getElementById('flip-btn');
       const resetBtn = document.getElementById('reset-btn');
       const downloadBtn = document.getElementById('download-btn');
+      const clearSlotBtn = document.getElementById('clear-slot-btn');
 
       if (canvas) {
         canvas.addEventListener('click', (e) => {
@@ -438,6 +441,16 @@ const MERIT_BADGES = [
 
       if (searchInput) {
         searchInput.addEventListener('input', (e) => renderBadgePalette(e.target.value));
+      }
+
+      if (clearSlotBtn) {
+        clearSlotBtn.addEventListener('click', () => {
+          if (selectedSlotIndex >= 0 && selectedSlotIndex < TOTAL_SLOTS) {
+            placedBadges[selectedSlotIndex] = null;
+            drawSash();
+            renderBadgePalette(searchInput ? searchInput.value : '');
+          }
+        });
       }
 
       if (flipBtn) {
