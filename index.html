@@ -84,7 +84,7 @@
     const ACTIVE_ROWS = 16;
     const TOTAL_SLOTS = ACTIVE_ROWS * COLS;
 
-    // All 96 badges sorted strictly alphabetically by name
+    // All 128 badges sorted strictly alphabetically by name
 const MERIT_BADGES = [
       { id: "american_business", name: "American Business", imageUrl: "mbs/AmericanBusiness-1.webp" },
       { id: "american_cultures", name: "American Cultures", imageUrl: "mbs/AmericanCultures.webp" },
@@ -181,9 +181,40 @@ const MERIT_BADGES = [
       { id: "personal_fitness", name: "Personal Fitness", imageUrl: "mbs/PersonalFitness.webp" },
       { id: "personal_management", name: "Personal Management", imageUrl: "mbs/PersonalManagement.webp" },
       { id: "pets", name: "Pets", imageUrl: "mbs/Pets.webp" },
-      { id: "photography", name: "Photography", imageUrl: "mbs/Photography.webp" }
+      { id: "photography", name: "Photography", imageUrl: "mbs/Photography.webp" },
+      { id: "pioneering", name: "Pioneering", imageUrl: "mbs/Pioneering.webp" },
+      { id: "plant_science", name: "Plant Science", imageUrl: "mbs/PlantScience.webp" },
+      { id: "plumbing", name: "Plumbing", imageUrl: "mbs/Plumbing.webp" },
+      { id: "pottery", name: "Pottery", imageUrl: "mbs/Pottery.webp" },
+      { id: "programming", name: "Programming", imageUrl: "mbs/Programming.webp" },
+      { id: "public_health", name: "Public Health", imageUrl: "mbs/PublicHealth.webp" },
+      { id: "public_speaking", name: "Public Speaking", imageUrl: "mbs/PublicSpeaking.webp" },
+      { id: "pulp_and_paper", name: "Pulp and Paper", imageUrl: "mbs/PulpAndPaper.webp" },
+      { id: "radio", name: "Radio", imageUrl: "mbs/Radio.webp" },
+      { id: "railroading", name: "Railroading", imageUrl: "mbs/RailRoading.webp" },
+      { id: "reading", name: "Reading", imageUrl: "mbs/Reading.webp" },
+      { id: "reptile_and_amphibian_study", name: "Reptile and Amphibian Study", imageUrl: "mbs/ReptileAndAmphibianStudy.webp" },
+      { id: "rifle_shooting", name: "Rifle Shooting", imageUrl: "mbs/RifleShooting.webp" },
+      { id: "robotics", name: "Robotics", imageUrl: "mbs/Robotics.webp" },
+      { id: "rowing", name: "Rowing", imageUrl: "mbs/Rowing.webp" },
+      { id: "safety", name: "Safety", imageUrl: "mbs/Safety.webp" },
+      { id: "salesmanship", name: "Salesmanship", imageUrl: "mbs/Salesmanship.webp" },
+      { id: "scholarship", name: "Scholarship", imageUrl: "mbs/Scholarship.webp" },
+      { id: "scouting_heritage", name: "Scouting Heritage", imageUrl: "mbs/ScoutingHeritage.webp" },
+      { id: "scuba_diving", name: "Scuba Diving", imageUrl: "mbs/ScubaDiving.webp" },
+      { id: "sculpture", name: "Sculpture", imageUrl: "mbs/Sculpture.webp" },
+      { id: "search_and_rescue", name: "Search and Rescue", imageUrl: "mbs/SearchRescue.webp" },
+      { id: "shotgun_shooting", name: "Shotgun Shooting", imageUrl: "mbs/ShotgunShooting.webp" },
+      { id: "signs_signals_and_codes", name: "Signs, Signals, and Codes", imageUrl: "mbs/Signs-Signals-and-Codes.webp" },
+      { id: "skating", name: "Skating", imageUrl: "mbs/Skating.webp" },
+      { id: "small_boat_sailing", name: "Small-Boat Sailing", imageUrl: "mbs/SmallBoatSailing.webp" },
+      { id: "snow_sports", name: "Snow Sports", imageUrl: "mbs/SnowSports.webp" },
+      { id: "soil_and_water_conservation", name: "Soil and Water Conservation", imageUrl: "mbs/SoilAndWaterConservation.webp" },
+      { id: "space_exploration", name: "Space Exploration", imageUrl: "mbs/SpaceExploration.webp" },
+      { id: "sports", name: "Sports", imageUrl: "mbs/Sports.webp" },
+      { id: "stamp_collecting", name: "Stamp Collecting", imageUrl: "mbs/StampCollecting.webp" },
+      { id: "surveying", name: "Surveying", imageUrl: "mbs/Surveying.webp" }
     ];
-
     let isFlipped = false;
     let selectedSlotIndex = 0;
     const placedBadges = new Array(TOTAL_SLOTS).fill(null);
