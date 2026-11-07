@@ -84,7 +84,7 @@
     const ACTIVE_ROWS = 16;
     const TOTAL_SLOTS = ACTIVE_ROWS * COLS;
 
-    // All 128 badges sorted strictly alphabetically by name
+    // All 143 badges sorted strictly alphabetically by name
 const MERIT_BADGES = [
       { id: "american_business", name: "American Business", imageUrl: "mbs/AmericanBusiness-1.webp" },
       { id: "american_cultures", name: "American Cultures", imageUrl: "mbs/AmericanCultures.webp" },
@@ -213,8 +213,24 @@ const MERIT_BADGES = [
       { id: "space_exploration", name: "Space Exploration", imageUrl: "mbs/SpaceExploration.webp" },
       { id: "sports", name: "Sports", imageUrl: "mbs/Sports.webp" },
       { id: "stamp_collecting", name: "Stamp Collecting", imageUrl: "mbs/StampCollecting.webp" },
-      { id: "surveying", name: "Surveying", imageUrl: "mbs/Surveying.webp" }
+      { id: "surveying", name: "Surveying", imageUrl: "mbs/Surveying.webp" },
+      { id: "sustainability", name: "Sustainability", imageUrl: "mbs/Sustainability.webp" },
+      { id: "swimming", name: "Swimming", imageUrl: "mbs/Swimming.webp" },
+      { id: "textile", name: "Textile", imageUrl: "mbs/Textile.webp" },
+      { id: "theater", name: "Theater", imageUrl: "mbs/Theater.webp" },
+      { id: "traffic_safety", name: "Traffic Safety", imageUrl: "mbs/TrafficSafety.webp" },
+      { id: "truck_transportation", name: "Truck Transportation", imageUrl: "mbs/TruckTransportation.webp" },
+      { id: "veterinary_medicine", name: "Veterinary Medicine", imageUrl: "mbs/VeterinaryMedicine.webp" },
+      { id: "water_sports", name: "Water Sports", imageUrl: "mbs/Water-sports.webp" },
+      { id: "weather", name: "Weather", imageUrl: "mbs/Weather.webp" },
+      { id: "welding", name: "Welding", imageUrl: "mbs/Welding.webp" },
+      { id: "whitewater", name: "Whitewater", imageUrl: "mbs/Whitewater.webp" },
+      { id: "wilderness_survival", name: "Wilderness Survival", imageUrl: "mbs/WildernessSurvival.webp" },
+      { id: "wildland_fire_management", name: "Wildland Fire Management", imageUrl: "mbs/Wildland-fire-management.webp" },
+      { id: "wood_carving", name: "Wood Carving", imageUrl: "mbs/WoodCarving.webp" },
+      { id: "woodwork", name: "Woodwork", imageUrl: "mbs/Woodwork.webp" }
     ];
+    
     let isFlipped = false;
     let selectedSlotIndex = 0;
     const placedBadges = new Array(TOTAL_SLOTS).fill(null);
