@@ -84,8 +84,9 @@
     const ACTIVE_ROWS = 16;
     const TOTAL_SLOTS = ACTIVE_ROWS * COLS;
 
-    // All 143 badges sorted strictly alphabetically by name
+    // All 143 badges sorted strictly alphabetically by name plus a blank
 const MERIT_BADGES = [
+      { id: "empty", name: "Clear Slot", imageUrl: "" },
       { id: "american_business", name: "American Business", imageUrl: "mbs/AmericanBusiness-1.webp" },
       { id: "american_cultures", name: "American Cultures", imageUrl: "mbs/AmericanCultures.webp" },
       { id: "american_heritage", name: "American Heritage", imageUrl: "mbs/AmericanHeritage.webp" },
