@@ -1,4 +1,91 @@
-const MERIT_BADGES = [
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BSA Merit Badge Sash Generator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f1f1; }
+    ::-webkit-scrollbar-thumb { background: #c5c5c5; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
+  </style>
+</head>
+<body class="bg-stone-900 text-stone-800 min-h-screen flex flex-col items-center justify-start p-2 sm:p-4">
+
+  <!-- Header -->
+  <header class="w-full max-w-6xl mb-3 flex items-center justify-between bg-stone-800 text-white p-4 rounded-xl shadow-md border border-stone-700">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-full bg-emerald-700 flex items-center justify-center text-amber-400 font-black shadow-inner text-lg">
+        <i class="fa-solid fa-award"></i>
+      </div>
+      <div>
+        <h1 class="text-lg font-bold leading-tight">BSA Merit Badge Sash Generator</h1>
+        <p class="text-xs text-stone-400">Interactive 3-Column Layout Builder (48 Slots)</p>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 bg-white rounded-2xl shadow-2xl overflow-hidden border border-stone-300">
+    
+    <!-- Left Column: Interactive Sash Preview Container -->
+    <section class="lg:col-span-7 p-4 md:p-6 flex flex-col items-center bg-stone-100 border-b lg:border-b-0 lg:border-r border-stone-200 relative overflow-y-auto max-h-[85vh]">
+      
+      <!-- Controls Bar -->
+      <div class="w-full max-w-md flex items-center justify-between gap-2 mb-4 bg-white p-3 rounded-xl shadow-sm border border-stone-200">
+        <span id="badge-count-tag" class="text-xs font-bold text-stone-700 bg-stone-100 px-3 py-1.5 rounded-lg border border-stone-200">
+          0 / 48 Badges
+        </span>
+        <div class="flex items-center gap-2">
+          <button id="flip-btn" class="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-semibold shadow transition flex items-center gap-1.5">
+            <i class="fa-solid fa-rotate"></i> Flip Sash (Back)
+          </button>
+          <button id="reset-btn" class="px-3 py-1.5 bg-stone-200 hover:bg-stone-300 text-stone-700 rounded-lg text-xs font-semibold transition flex items-center gap-1.5">
+            <i class="fa-solid fa-arrow-rotate-left"></i> Reset
+          </button>
+          <button id="download-btn" class="px-3 py-1.5 bg-stone-900 hover:bg-black text-white rounded-lg text-xs font-semibold shadow transition flex items-center gap-1.5">
+            <i class="fa-solid fa-download"></i> Export PNG
+          </button>
+        </div>
+      </div>
+
+      <!-- Sash Canvas Viewport -->
+      <div class="relative flex justify-center w-full my-auto py-2">
+        <canvas id="sash-canvas" width="450" height="1850" class="w-[380px] sm:w-[420px] md:w-[450px] aspect-[450/1850] drop-shadow-xl cursor-pointer rounded-lg bg-transparent"></canvas>
+      </div>
+    </section>
+
+    <!-- Right Column: Merit Badge Palette -->
+    <section class="lg:col-span-5 p-4 md:p-6 flex flex-col bg-white overflow-hidden max-h-[85vh]">
+      
+      <!-- Palette Search Header -->
+      <div class="mb-4">
+        <div class="relative">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-stone-400 text-sm"></i>
+          <input type="text" id="search-input" placeholder="Search merit badges..." class="w-full pl-10 pr-4 py-2 bg-stone-50 border border-stone-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:bg-white transition">
+        </div>
+      </div>
+
+      <!-- Badge Palette Grid Scrollable Container -->
+      <div id="badge-palette" class="grid grid-cols-2 sm:grid-cols-3 gap-3 overflow-y-auto pr-1 items-start content-start pb-4">
+        <!-- Badge items populated by JavaScript -->
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const COLS = 3;
+    const START_ROW = 1;
+    const ACTIVE_ROWS = 16;
+    const TOTAL_SLOTS = ACTIVE_ROWS * COLS;
+
+    // All 33 badges sorted strictly alphabetically by name
+    const MERIT_BADGES = [
       { id: "american_business", name: "American Business", imageUrl: "mbs/AmericanBusiness-1.webp" },
       { id: "american_cultures", name: "American Cultures", imageUrl: "mbs/AmericanCultures.webp" },
       { id: "american_heritage", name: "American Heritage", imageUrl: "mbs/AmericanHeritage.webp" },
@@ -29,5 +116,246 @@ const MERIT_BADGES = [
       { id: "citizenship_world", name: "Citizenship in the World", imageUrl: "mbs/CitizenshipWorld.webp" },
       { id: "climbing", name: "Climbing", imageUrl: "mbs/Climbing.webp" },
       { id: "coin_collecting", name: "Coin Collecting", imageUrl: "mbs/CoinCollecting.webp" },
-      { id: "collections", name: "Collections", imageUrl: "mbs/Collections.webp" }
+      { id: "collections", name: "Collections", imageUrl: "mbs/Collections.webp" },
+      { id: "communications", name: "Communications", imageUrl: "mbs/Communications.webp" }
     ];
+
+    let isFlipped = false;
+    let selectedSlotIndex = 0;
+    const placedBadges = new Array(TOTAL_SLOTS).fill(null);
+    const loadedImages = {};
+
+    function loadBadgeImages() {
+      MERIT_BADGES.forEach(badge => {
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+        img.onload = () => {
+          loadedImages[badge.id] = img;
+          drawSash();
+          renderBadgePalette(document.getElementById('search-input')?.value || '');
+        };
+        img.src = badge.imageUrl;
+      });
+    }
+
+    function getSlotCoordinates(slotIndex) {
+      const canvas = document.getElementById('sash-canvas');
+      const w = canvas ? canvas.width : 450;
+      const col = slotIndex % COLS;
+      const row = Math.floor(slotIndex / COLS) + START_ROW;
+      const topMargin = 120;
+      const rowHeight = 88;
+      const colWidth = 100;
+      const startX = (w - (COLS * colWidth)) / 2 + (colWidth / 2);
+      return { x: startX + (col * colWidth), y: topMargin + (row * rowHeight), radius: 36 };
+    }
+
+    function drawSash(isExporting = false) {
+      const canvas = document.getElementById('sash-canvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+
+      ctx.clearRect(0, 0, w, h);
+
+      const sashWidth = 340;
+      const sashLeft = (w - sashWidth) / 2;
+      const sashRight = sashLeft + sashWidth;
+      const bodyBottom = 1570;
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(sashLeft, 40);
+      ctx.lineTo(sashRight, 40);
+      ctx.lineTo(sashRight, bodyBottom);
+
+      if (!isFlipped) {
+        ctx.lineTo(sashLeft, bodyBottom + 180);
+      } else {
+        ctx.lineTo(sashRight, bodyBottom + 180);
+        ctx.lineTo(sashLeft, bodyBottom);
+      }
+      ctx.closePath();
+
+      ctx.fillStyle = '#223824';
+      ctx.fill();
+
+      ctx.strokeStyle = '#18281a';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+
+      ctx.setLineDash([6, 6]);
+      ctx.strokeStyle = '#365339';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.restore();
+
+      for (let i = 0; i < TOTAL_SLOTS; i++) {
+        const { x, y, radius } = getSlotCoordinates(i);
+        const placedBadgeId = placedBadges[i];
+
+        if (placedBadgeId && loadedImages[placedBadgeId]) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(x, y, radius, 0, Math.PI * 2);
+          ctx.clip();
+
+          const img = loadedImages[placedBadgeId];
+          ctx.drawImage(img, x - radius, y - radius, radius * 2, radius * 2);
+          ctx.restore();
+
+          ctx.beginPath();
+          ctx.arc(x, y, radius, 0, Math.PI * 2);
+          ctx.strokeStyle = '#5a785c';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        } else if (!isExporting) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(x, y, radius, 0, Math.PI * 2);
+          ctx.strokeStyle = (i === selectedSlotIndex) ? '#f59e0b' : 'rgba(255, 255, 255, 0.25)';
+          ctx.lineWidth = (i === selectedSlotIndex) ? 3 : 1.5;
+          if (i !== selectedSlotIndex) ctx.setLineDash([4, 4]);
+          ctx.stroke();
+
+          ctx.fillStyle = (i === selectedSlotIndex) ? '#f59e0b' : 'rgba(255, 255, 255, 0.4)';
+          ctx.font = '600 13px Inter, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText((i + 1).toString(), x, y);
+          ctx.restore();
+        }
+      }
+
+      const countTag = document.getElementById('badge-count-tag');
+      if (countTag) {
+        const count = placedBadges.filter(Boolean).length;
+        countTag.textContent = `${count} / ${TOTAL_SLOTS} Badges`;
+      }
+    }
+
+    function renderBadgePalette(filterQuery = '') {
+      const palette = document.getElementById('badge-palette');
+      if (!palette) return;
+      palette.innerHTML = '';
+
+      const query = filterQuery.toLowerCase().trim();
+      MERIT_BADGES.filter(b => b.name.toLowerCase().includes(query)).forEach(badge => {
+        const isPlaced = placedBadges.includes(badge.id);
+        const card = document.createElement('div');
+        card.className = `flex flex-col items-center justify-between p-3 rounded-xl border transition cursor-pointer select-none h-auto ${
+          isPlaced ? 'bg-stone-100 border-stone-200 opacity-60' : 'bg-white hover:bg-stone-50 border-stone-200 hover:border-emerald-600 shadow-sm hover:shadow'
+        }`;
+
+        const imgContainer = document.createElement('div');
+        imgContainer.className = 'w-14 h-14 rounded-full overflow-hidden mb-2 shadow-sm flex items-center justify-center bg-stone-100 border border-stone-200';
+
+        if (loadedImages[badge.id]) {
+          const img = document.createElement('img');
+          img.src = loadedImages[badge.id].src;
+          img.className = 'w-full h-full object-cover';
+          imgContainer.appendChild(img);
+        } else {
+          const placeholder = document.createElement('div');
+          placeholder.className = 'w-full h-full bg-stone-200 animate-pulse';
+          imgContainer.appendChild(placeholder);
+        }
+
+        const title = document.createElement('span');
+        title.className = 'text-xs font-semibold text-center text-stone-800 line-clamp-2 leading-tight';
+        title.textContent = badge.name;
+
+        card.appendChild(imgContainer);
+        card.appendChild(title);
+
+        if (isPlaced) {
+          const placedTag = document.createElement('span');
+          placedTag.className = 'mt-1.5 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200';
+          placedTag.textContent = 'Placed';
+          card.appendChild(placedTag);
+        } else {
+          card.addEventListener('click', () => attachBadgeToSlot(badge.id));
+        }
+
+        palette.appendChild(card);
+      });
+    }
+
+    function attachBadgeToSlot(badgeId) {
+      if (selectedSlotIndex < 0 || selectedSlotIndex >= TOTAL_SLOTS) return;
+      placedBadges[selectedSlotIndex] = badgeId;
+
+      const nextEmpty = placedBadges.findIndex((b, idx) => idx > selectedSlotIndex && b === null);
+      if (nextEmpty !== -1) {
+        selectedSlotIndex = nextEmpty;
+      } else {
+        const anyEmpty = placedBadges.findIndex(b => b === null);
+        if (anyEmpty !== -1) selectedSlotIndex = anyEmpty;
+      }
+
+      drawSash();
+      renderBadgePalette(document.getElementById('search-input')?.value || '');
+    }
+
+    window.onload = function() {
+      const canvas = document.getElementById('sash-canvas');
+      const searchInput = document.getElementById('search-input');
+      const flipBtn = document.getElementById('flip-btn');
+      const resetBtn = document.getElementById('reset-btn');
+      const downloadBtn = document.getElementById('download-btn');
+
+      if (canvas) {
+        canvas.addEventListener('click', (e) => {
+          const rect = canvas.getBoundingClientRect();
+          const scaleX = canvas.width / rect.width;
+          const scaleY = canvas.height / rect.height;
+          const clickX = (e.clientX - rect.left) * scaleX;
+          const clickY = (e.clientY - rect.top) * scaleY;
+
+          for (let i = 0; i < TOTAL_SLOTS; i++) {
+            const { x, y, radius } = getSlotCoordinates(i);
+            if (Math.hypot(clickX - x, clickY - y) <= radius + 5) {
+              selectedSlotIndex = i;
+              drawSash();
+              break;
+            }
+          }
+        });
+      }
+
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => renderBadgePalette(e.target.value));
+      }
+
+      if (flipBtn) {
+        flipBtn.addEventListener('click', () => { isFlipped = !isFlipped; drawSash(); });
+      }
+
+      if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+          placedBadges.fill(null);
+          selectedSlotIndex = 0;
+          drawSash();
+          renderBadgePalette(searchInput ? searchInput.value : '');
+        });
+      }
+
+      if (downloadBtn) {
+        downloadBtn.addEventListener('click', () => {
+          drawSash(true);
+          const link = document.createElement('a');
+          link.download = 'my-merit-badge-sash.png';
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+          drawSash(false);
+        });
+      }
+
+      drawSash();
+      renderBadgePalette();
+      loadBadgeImages();
+    };
+  </script>
+</body>
+</html>
