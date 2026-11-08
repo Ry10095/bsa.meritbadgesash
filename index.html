@@ -522,21 +522,19 @@
       renderBadgePalette(document.getElementById('search-input')?.value || '');
     }
 
-    // Save & Load Code Logic (Updated to fully support variants via compound index encoding)
+    // Pure 4-digit variant-aware Code Logic (Strictly 192 characters)
     function exportSashCode() {
       return placedBadges.map(badgeId => {
-        if (!badgeId) return "000";
+        if (!badgeId) return "0000";
         
         for (let i = 0; i < MERIT_BADGES.length; i++) {
           const b = MERIT_BADGES[i];
           if (b.id === badgeId) {
-            // Format: Base index (1-based, 3 digits) followed by variant flag '0'
             return (i + 1).toString().padStart(3, '0') + '0';
           }
           if (b.variants) {
             const vIndex = b.variants.findIndex(v => v.id === badgeId);
             if (vIndex !== -1) {
-              // Format: Base index (3 digits) followed by variant number (1-based index)
               return (i + 1).toString().padStart(3, '0') + (vIndex + 1).toString();
             }
           }
@@ -546,43 +544,32 @@
     }
 
     function importSashCode(codeString) {
-      // Supports both old 3-digit codes (144 chars) and new 4-digit variant-aware codes (192 chars)
-      if (codeString.length === TOTAL_SLOTS * 3) {
-        // Legacy 3-digit format fallback
-        for (let i = 0; i < TOTAL_SLOTS; i++) {
-          const numStr = codeString.substr(i * 3, 3);
-          const badgeIndex = parseInt(numStr, 10) - 1;
-          if (badgeIndex >= 0 && badgeIndex < MERIT_BADGES.length) {
-            placedBadges[i] = MERIT_BADGES[badgeIndex].id;
-          } else {
-            placedBadges[i] = null;
-          }
-        }
-      } else if (codeString.length === TOTAL_SLOTS * 4) {
-        // New 4-digit variant-aware format
-        for (let i = 0; i < TOTAL_SLOTS; i++) {
-          const chunk = codeString.substr(i * 4, 4);
-          if (chunk === "0000") {
-            placedBadges[i] = null;
-            continue;
-          }
-          const badgeIndex = parseInt(chunk.substr(0, 3), 10) - 1;
-          const variantIndex = parseInt(chunk.substr(3, 1), 10);
-
-          if (badgeIndex >= 0 && badgeIndex < MERIT_BADGES.length) {
-            const badge = MERIT_BADGES[badgeIndex];
-            if (variantIndex === 0 || !badge.variants || !badge.variants[variantIndex - 1]) {
-              placedBadges[i] = badge.id;
-            } else {
-              placedBadges[i] = badge.variants[variantIndex - 1].id;
-            }
-          } else {
-            placedBadges[i] = null;
-          }
-        }
-      } else {
-        alert("Invalid sash code length!");
+      codeString = codeString.trim();
+      
+      if (codeString.length !== TOTAL_SLOTS * 4) {
+        alert("Invalid sash code length! Expected exactly 192 characters.");
         return;
+      }
+
+      for (let i = 0; i < TOTAL_SLOTS; i++) {
+        const chunk = codeString.substr(i * 4, 4);
+        if (chunk === "0000") {
+          placedBadges[i] = null;
+          continue;
+        }
+        const badgeIndex = parseInt(chunk.substr(0, 3), 10) - 1;
+        const variantIndex = parseInt(chunk.substr(3, 1), 10);
+
+        if (badgeIndex >= 0 && badgeIndex < MERIT_BADGES.length) {
+          const badge = MERIT_BADGES[badgeIndex];
+          if (variantIndex === 0 || !badge.variants || !badge.variants[variantIndex - 1]) {
+            placedBadges[i] = badge.id;
+          } else {
+            placedBadges[i] = badge.variants[variantIndex - 1].id;
+          }
+        } else {
+          placedBadges[i] = null;
+        }
       }
 
       drawSash();
@@ -643,7 +630,7 @@
       if (loadBtn) {
         loadBtn.addEventListener('click', () => {
           const code = prompt("Paste your sash code here:");
-          if (code) importSashCode(code.trim());
+          if (code) importSashCode(code);
         });
       }
 
