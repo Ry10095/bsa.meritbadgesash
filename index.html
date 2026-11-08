@@ -410,27 +410,27 @@
           isAnyPlaced ? 'bg-stone-100 border-stone-200 opacity-60' : 'bg-white hover:bg-stone-50 border-stone-200 hover:border-emerald-600 shadow-sm hover:shadow'
         }`;
 
-        // 3-Dots Variant Selection Menu
+        // 3-Dots Variant Selection Menu Button
         if (badge.variants && badge.variants.length > 0) {
           const dotsBtn = document.createElement('button');
-          dotsBtn.className = 'absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-stone-400 hover:text-stone-800 rounded-full hover:bg-stone-100 transition z-10';
+          dotsBtn.className = 'absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-stone-400 hover:text-stone-800 rounded-full hover:bg-stone-100 transition z-20';
           dotsBtn.innerHTML = '<i class="fa-solid fa-ellipsis-vertical text-xs"></i>';
           
           const popup = document.createElement('div');
-          popup.className = 'hidden absolute top-8 right-0 w-60 bg-emerald-700 text-white rounded-xl shadow-xl border border-emerald-600 p-2.5 z-20 text-left';
+          popup.className = 'hidden absolute top-9 left-2 right-2 w-auto bg-emerald-800 text-white rounded-xl shadow-xl border border-emerald-700 p-2 z-30 text-left';
           
           const popupTitle = document.createElement('div');
-          popupTitle.className = 'text-[11px] font-bold uppercase tracking-wider text-emerald-200 mb-2 border-b border-emerald-600 pb-1';
-          popupTitle.textContent = 'Variants';
+          popupTitle.className = 'text-[10px] font-bold uppercase tracking-wider text-emerald-200 mb-1.5 border-b border-emerald-700 pb-1';
+          popupTitle.textContent = 'Select Variant';
           popup.appendChild(popupTitle);
 
           const defaultOption = document.createElement('div');
-          defaultOption.className = 'flex items-center gap-2 p-1.5 rounded-lg hover:bg-emerald-800 transition cursor-pointer mb-1';
+          defaultOption.className = 'flex items-center gap-1.5 p-1.5 rounded-lg hover:bg-emerald-700 transition cursor-pointer mb-1';
           defaultOption.innerHTML = `
-            <span class="w-5 h-5 rounded-full bg-emerald-600 text-[10px] font-bold flex items-center justify-center text-emerald-100 border border-emerald-500">Def</span>
-            <div class="flex flex-col">
-              <span class="text-xs font-semibold leading-none">${badge.name}</span>
-              <span class="text-[10px] text-emerald-200 mt-0.5">Current Standard</span>
+            <span class="w-4 h-4 rounded-full bg-emerald-600 text-[9px] font-bold flex items-center justify-center text-emerald-100 border border-emerald-500 shrink-0">STD</span>
+            <div class="flex flex-col min-w-0">
+              <span class="text-xs font-semibold leading-tight truncate">${badge.name}</span>
+              <span class="text-[9px] text-emerald-200">Current Standard</span>
             </div>
           `;
           defaultOption.addEventListener('click', (e) => {
@@ -442,12 +442,12 @@
 
           badge.variants.forEach((variant, vIdx) => {
             const option = document.createElement('div');
-            option.className = 'flex items-center gap-2 p-1.5 rounded-lg hover:bg-emerald-800 transition cursor-pointer';
+            option.className = 'flex items-center gap-1.5 p-1.5 rounded-lg hover:bg-emerald-700 transition cursor-pointer';
             option.innerHTML = `
-              <span class="w-5 h-5 rounded-full bg-amber-500 text-[10px] font-bold flex items-center justify-center text-stone-900 shadow-sm">V${vIdx + 1}</span>
-              <div class="flex flex-col">
-                <span class="text-xs font-semibold leading-none">${variant.name}</span>
-                <span class="text-[10px] text-amber-200 mt-0.5">${variant.years || 'Alt Design'}</span>
+              <span class="w-4 h-4 rounded-full bg-amber-500 text-[9px] font-bold flex items-center justify-center text-stone-900 shadow-sm shrink-0">V${vIdx + 1}</span>
+              <div class="flex flex-col min-w-0">
+                <span class="text-xs font-semibold leading-tight truncate">${variant.name}</span>
+                <span class="text-[9px] text-amber-200">${variant.years || 'Alt Design'}</span>
               </div>
             `;
             option.addEventListener('click', (e) => {
