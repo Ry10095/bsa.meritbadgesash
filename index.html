@@ -28,6 +28,14 @@
         <p class="text-xs text-stone-400">Interactive 3-Column Layout Builder (48 Slots)</p>
       </div>
     </div>
+    <div class="flex items-center gap-2">
+      <button id="save-btn" class="px-3 py-1.5 bg-stone-700 hover:bg-stone-600 text-white rounded-lg text-xs font-semibold shadow transition flex items-center gap-1.5">
+        <i class="fa-solid fa-copy"></i> Copy Code
+      </button>
+      <button id="load-btn" class="px-3 py-1.5 bg-stone-700 hover:bg-stone-600 text-white rounded-lg text-xs font-semibold shadow transition flex items-center gap-1.5">
+        <i class="fa-solid fa-file-import"></i> Load Code
+      </button>
+    </div>
   </header>
 
   <!-- Main Container -->
@@ -87,12 +95,24 @@
     const ACTIVE_ROWS = 16;
     const TOTAL_SLOTS = ACTIVE_ROWS * COLS;
 
-    // All 143 badges sorted strictly alphabetically by name
+    // All badges sorted alphabetically with alternate designs attached
     const MERIT_BADGES = [
       { id: "american_business", name: "American Business", imageUrl: "mbs/AmericanBusiness-1.webp" },
       { id: "american_cultures", name: "American Cultures", imageUrl: "mbs/AmericanCultures.webp" },
       { id: "american_heritage", name: "American Heritage", imageUrl: "mbs/AmericanHeritage.webp" },
-      { id: "american_indian_culture", name: "American Indian Culture", imageUrl: "mbs/American-Indian-Culture.webp" },
+      { 
+        id: "american_indian_culture", 
+        name: "American Indian Culture", 
+        imageUrl: "mbs/American-Indian-Culture.webp",
+        variants: [
+          { 
+            id: "indian_lore_legacy", 
+            name: "Indian Lore", 
+            years: "1969–2026", 
+            imageUrl: "mbs/Indian-Lore-69-26.webp" 
+          }
+        ]
+      },
       { id: "american_labor", name: "American Labor", imageUrl: "mbs/AmericanLabor.webp" },
       { id: "animal_science", name: "Animal Science", imageUrl: "mbs/AnimalScience.webp" },
       { id: "animation", name: "Animation", imageUrl: "mbs/Animation.webp" },
@@ -129,7 +149,19 @@
       { id: "cycling", name: "Cycling", imageUrl: "mbs/Cycling.webp" },
       { id: "dentistry", name: "Dentistry", imageUrl: "mbs/Dentistry.webp" },
       { id: "digital_technology", name: "Digital Technology", imageUrl: "mbs/Digital_Technology.webp" },
-      { id: "disabilities_awareness", name: "Disabilities Awareness", imageUrl: "mbs/Disabilities-Awareness.webp" },
+      { 
+        id: "disabilities_awareness", 
+        name: "Disabilities Awareness", 
+        imageUrl: "mbs/Disabilities-Awareness.webp",
+        variants: [
+          { 
+            id: "disabilities_awareness_legacy", 
+            name: "Legacy Design", 
+            years: "1993–2025", 
+            imageUrl: "mbs/Disabilities-Awareness-93-25.webp" 
+          }
+        ]
+      },
       { id: "dog_care", name: "Dog Care", imageUrl: "mbs/DogCare.webp" },
       { id: "drafting", name: "Drafting", imageUrl: "mbs/Drafting.webp" },
       { id: "electricity", name: "Electricity", imageUrl: "mbs/Electricity.webp" },
@@ -249,6 +281,19 @@
           renderBadgePalette(document.getElementById('search-input')?.value || '');
         };
         img.src = badge.imageUrl;
+
+        if (badge.variants) {
+          badge.variants.forEach(variant => {
+            const vImg = new Image();
+            vImg.crossOrigin = "anonymous";
+            vImg.onload = () => {
+              loadedImages[variant.id] = vImg;
+              drawSash();
+              renderBadgePalette(document.getElementById('search-input')?.value || '');
+            };
+            vImg.src = variant.imageUrl;
+          });
+        }
       });
     }
 
@@ -356,18 +401,81 @@
 
       const query = filterQuery.toLowerCase().trim();
       MERIT_BADGES.filter(b => b.name.toLowerCase().includes(query)).forEach(badge => {
-        const isPlaced = placedBadges.includes(badge.id);
+        const isMainPlaced = placedBadges.includes(badge.id);
+        const placedVariant = badge.variants ? badge.variants.find(v => placedBadges.includes(v.id)) : null;
+        const isAnyPlaced = isMainPlaced || !!placedVariant;
+
         const card = document.createElement('div');
-        card.className = `flex flex-col items-center justify-between p-3 rounded-xl border transition cursor-pointer select-none h-auto ${
-          isPlaced ? 'bg-stone-100 border-stone-200 opacity-60' : 'bg-white hover:bg-stone-50 border-stone-200 hover:border-emerald-600 shadow-sm hover:shadow'
+        card.className = `relative flex flex-col items-center justify-between p-3 rounded-xl border transition cursor-pointer select-none h-auto ${
+          isAnyPlaced ? 'bg-stone-100 border-stone-200 opacity-60' : 'bg-white hover:bg-stone-50 border-stone-200 hover:border-emerald-600 shadow-sm hover:shadow'
         }`;
+
+        // 3-Dots Variant Selection Menu
+        if (badge.variants && badge.variants.length > 0) {
+          const dotsBtn = document.createElement('button');
+          dotsBtn.className = 'absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-stone-400 hover:text-stone-800 rounded-full hover:bg-stone-100 transition z-10';
+          dotsBtn.innerHTML = '<i class="fa-solid fa-ellipsis-vertical text-xs"></i>';
+          
+          const popup = document.createElement('div');
+          popup.className = 'hidden absolute top-8 right-0 w-60 bg-emerald-700 text-white rounded-xl shadow-xl border border-emerald-600 p-2.5 z-20 text-left';
+          
+          const popupTitle = document.createElement('div');
+          popupTitle.className = 'text-[11px] font-bold uppercase tracking-wider text-emerald-200 mb-2 border-b border-emerald-600 pb-1';
+          popupTitle.textContent = 'Variants';
+          popup.appendChild(popupTitle);
+
+          const defaultOption = document.createElement('div');
+          defaultOption.className = 'flex items-center gap-2 p-1.5 rounded-lg hover:bg-emerald-800 transition cursor-pointer mb-1';
+          defaultOption.innerHTML = `
+            <span class="w-5 h-5 rounded-full bg-emerald-600 text-[10px] font-bold flex items-center justify-center text-emerald-100 border border-emerald-500">Def</span>
+            <div class="flex flex-col">
+              <span class="text-xs font-semibold leading-none">${badge.name}</span>
+              <span class="text-[10px] text-emerald-200 mt-0.5">Current Standard</span>
+            </div>
+          `;
+          defaultOption.addEventListener('click', (e) => {
+            e.stopPropagation();
+            popup.classList.add('hidden');
+            if (!isAnyPlaced) attachBadgeToSlot(badge.id);
+          });
+          popup.appendChild(defaultOption);
+
+          badge.variants.forEach((variant, vIdx) => {
+            const option = document.createElement('div');
+            option.className = 'flex items-center gap-2 p-1.5 rounded-lg hover:bg-emerald-800 transition cursor-pointer';
+            option.innerHTML = `
+              <span class="w-5 h-5 rounded-full bg-amber-500 text-[10px] font-bold flex items-center justify-center text-stone-900 shadow-sm">V${vIdx + 1}</span>
+              <div class="flex flex-col">
+                <span class="text-xs font-semibold leading-none">${variant.name}</span>
+                <span class="text-[10px] text-amber-200 mt-0.5">${variant.years || 'Alt Design'}</span>
+              </div>
+            `;
+            option.addEventListener('click', (e) => {
+              e.stopPropagation();
+              popup.classList.add('hidden');
+              if (!isAnyPlaced) attachBadgeToSlot(variant.id);
+            });
+            popup.appendChild(option);
+          });
+
+          dotsBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            document.querySelectorAll('#badge-palette .popup-menu').forEach(p => p.classList.add('hidden'));
+            popup.classList.toggle('hidden');
+          });
+
+          popup.classList.add('popup-menu');
+          card.appendChild(dotsBtn);
+          card.appendChild(popup);
+        }
 
         const imgContainer = document.createElement('div');
         imgContainer.className = 'w-14 h-14 rounded-full overflow-hidden mb-2 shadow-sm flex items-center justify-center bg-stone-100 border border-stone-200';
 
-        if (loadedImages[badge.id]) {
+        const activeBadgeId = placedVariant ? placedVariant.id : badge.id;
+        if (loadedImages[activeBadgeId]) {
           const img = document.createElement('img');
-          img.src = loadedImages[badge.id].src;
+          img.src = loadedImages[activeBadgeId].src;
           img.className = 'w-full h-full object-cover';
           imgContainer.appendChild(img);
         } else {
@@ -378,12 +486,12 @@
 
         const title = document.createElement('span');
         title.className = 'text-xs font-semibold text-center text-stone-800 line-clamp-2 leading-tight';
-        title.textContent = badge.name;
+        title.textContent = placedVariant ? placedVariant.name : badge.name;
 
         card.appendChild(imgContainer);
         card.appendChild(title);
 
-        if (isPlaced) {
+        if (isAnyPlaced) {
           const placedTag = document.createElement('span');
           placedTag.className = 'mt-1.5 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200';
           placedTag.textContent = 'Placed';
@@ -412,6 +520,44 @@
       renderBadgePalette(document.getElementById('search-input')?.value || '');
     }
 
+    // Save & Load Code Logic
+    function exportSashCode() {
+      return placedBadges.map(badgeId => {
+        if (!badgeId) return "000";
+        let index = MERIT_BADGES.findIndex(b => b.id === badgeId);
+        if (index !== -1) return (index + 1).toString().padStart(3, '0');
+        
+        for (let b of MERIT_BADGES) {
+          if (b.variants) {
+            let vIndex = b.variants.findIndex(v => v.id === badgeId);
+            if (vIndex !== -1) {
+              let mIndex = MERIT_BADGES.indexOf(b);
+              return (mIndex + 1).toString().padStart(3, '0');
+            }
+          }
+        }
+        return "000";
+      }).join('');
+    }
+
+    function importSashCode(codeString) {
+      if (codeString.length !== TOTAL_SLOTS * 3) {
+        alert("Invalid sash code length!");
+        return;
+      }
+      for (let i = 0; i < TOTAL_SLOTS; i++) {
+        const numStr = codeString.substr(i * 3, 3);
+        const badgeIndex = parseInt(numStr, 10) - 1;
+        if (badgeIndex >= 0 && badgeIndex < MERIT_BADGES.length) {
+          placedBadges[i] = MERIT_BADGES[badgeIndex].id;
+        } else {
+          placedBadges[i] = null;
+        }
+      }
+      drawSash();
+      renderBadgePalette(document.getElementById('search-input')?.value || '');
+    }
+
     window.onload = function() {
       const canvas = document.getElementById('sash-canvas');
       const searchInput = document.getElementById('search-input');
@@ -419,6 +565,8 @@
       const resetBtn = document.getElementById('reset-btn');
       const downloadBtn = document.getElementById('download-btn');
       const clearSlotBtn = document.getElementById('clear-slot-btn');
+      const saveBtn = document.getElementById('save-btn');
+      const loadBtn = document.getElementById('load-btn');
 
       if (canvas) {
         canvas.addEventListener('click', (e) => {
@@ -453,6 +601,21 @@
         });
       }
 
+      if (saveBtn) {
+        saveBtn.addEventListener('click', () => {
+          const code = exportSashCode();
+          navigator.clipboard.writeText(code);
+          alert("Sash code copied to clipboard!\n\n" + code);
+        });
+      }
+
+      if (loadBtn) {
+        loadBtn.addEventListener('click', () => {
+          const code = prompt("Paste your 144-digit sash code here:");
+          if (code) importSashCode(code.trim());
+        });
+      }
+
       if (flipBtn) {
         flipBtn.addEventListener('click', () => { isFlipped = !isFlipped; drawSash(); });
       }
@@ -476,6 +639,10 @@
           drawSash(false);
         });
       }
+
+      document.addEventListener('click', () => {
+        document.querySelectorAll('#badge-palette .popup-menu').forEach(p => p.classList.add('hidden'));
+      });
 
       drawSash();
       renderBadgePalette();
