@@ -35,6 +35,10 @@
       <button id="load-btn" class="px-3 py-1.5 bg-stone-700 hover:bg-stone-600 text-white rounded-lg text-xs font-semibold shadow transition flex items-center gap-1.5">
         <i class="fa-solid fa-file-import"></i> Load Code
       </button>
+      <button id="image-read-btn" class="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-xs font-semibold shadow transition flex items-center gap-1.5">
+        <i class="fa-solid fa-file-image"></i> Image Read
+      </button>
+      <input type="file" id="image-upload-input" accept="image/png" class="hidden">
     </div>
   </header>
 
@@ -579,6 +583,95 @@
       renderBadgePalette(document.getElementById('search-input')?.value || '');
     }
 
+    // --- PNG Binary Metadata Reader / Writer Helpers ---
+
+    // CRC32 table calculator for PNG chunk integrity
+    const crcTable = [];
+    for (let n = 0; n < 256; n++) {
+      let c = n;
+      for (let k = 0; k < 8; k++) {
+        c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+      }
+      crcTable[n] = c;
+    }
+    function calculateCRC(buf) {
+      let crc = 0xFFFFFFFF;
+      for (let i = 0; i < buf.length; i++) {
+        crc = crcTable[(crc ^ buf[i]) & 0xFF] ^ (crc >>> 8);
+      }
+      return (crc ^ 0xFFFFFFFF) >>> 0;
+    }
+
+    // Bake tEXt chunk into PNG ArrayBuffer right before IEND
+    function injectMetadataIntoPNGBuffer(buffer, key, value) {
+      const u8 = new Uint8Array(buffer);
+      // Verify PNG header signature
+      if (u8[0] !== 0x89 || u8[1] !== 0x50 || u8[2] !== 0x4E || u8[3] !== 0x47) return buffer;
+
+      // Construct tEXt chunk content: key + \0 + value
+      const encoder = new TextEncoder();
+      const keyBuf = encoder.encode(key);
+      const valBuf = encoder.encode(value);
+      const data = new Uint8Array(keyBuf.length + 1 + valBuf.length);
+      data.set(keyBuf, 0);
+      data[keyBuf.length] = 0; // Null separator
+      data.set(valBuf, keyBuf.length + 1);
+
+      const chunkType = new Uint8Array([116, 69, 120, 84]); // 'tEXt'
+      const len = data.length;
+
+      // Assemble chunk buffer: [4 bytes length][4 bytes type][data][4 bytes CRC]
+      const chunkBuf = new Uint8Array(4 + 4 + len + 4);
+      const view = new DataView(chunkBuf.buffer);
+      view.setUint32(0, len, false);
+      chunkBuf.set(chunkType, 4);
+      chunkBuf.set(data, 8);
+
+      const crcTarget = new Uint8Array(4 + len);
+      crcTarget.set(chunkType, 0);
+      crcTarget.set(data, 4);
+      const crc = calculateCRC(crcTarget);
+      view.setUint32(8 + len, crc, false);
+
+      // Insert right before IEND (last 12 bytes of a standard PNG)
+      const iendPos = u8.length - 12;
+      const out = new Uint8Array(u8.length + chunkBuf.length);
+      out.set(u8.subarray(0, iendPos), 0);
+      out.set(chunkBuf, iendPos);
+      out.set(u8.subarray(iendPos), iendPos + chunkBuf.length);
+
+      return out.buffer;
+    }
+
+    // Extract tEXt chunk matching key from PNG ArrayBuffer
+    function extractMetadataFromPNGBuffer(buffer, key) {
+      const u8 = new Uint8Array(buffer);
+      const view = new DataView(buffer);
+      let offset = 8; // Skip 8-byte PNG header
+
+      const decoder = new TextDecoder();
+      while (offset < u8.length - 12) {
+        const length = view.getUint32(offset, false);
+        const type = decoder.decode(u8.subarray(offset + 4, offset + 8));
+
+        if (type === 'tEXt') {
+          const chunkData = u8.subarray(offset + 8, offset + 8 + length);
+          let nullIdx = -1;
+          for (let i = 0; i < chunkData.length; i++) {
+            if (chunkData[i] === 0) { nullIdx = i; break; }
+          }
+          if (nullIdx !== -1) {
+            const foundKey = decoder.decode(chunkData.subarray(0, nullIdx));
+            if (foundKey === key) {
+              return decoder.decode(chunkData.subarray(nullIdx + 1));
+            }
+          }
+        }
+        offset += 12 + length; // Move to next chunk
+      }
+      return null;
+    }
+
     window.onload = function() {
       const canvas = document.getElementById('sash-canvas');
       const searchInput = document.getElementById('search-input');
@@ -588,6 +681,8 @@
       const clearSlotBtn = document.getElementById('clear-slot-btn');
       const saveBtn = document.getElementById('save-btn');
       const loadBtn = document.getElementById('load-btn');
+      const imageReadBtn = document.getElementById('image-read-btn');
+      const imageUploadInput = document.getElementById('image-upload-input');
 
       if (canvas) {
         canvas.addEventListener('click', (e) => {
@@ -637,6 +732,33 @@
         });
       }
 
+      // Image Read Button Action
+      if (imageReadBtn && imageUploadInput) {
+        imageReadBtn.addEventListener('click', () => {
+          imageUploadInput.click();
+        });
+
+        imageUploadInput.addEventListener('change', (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+
+          const reader = new FileReader();
+          reader.onload = function(evt) {
+            const buffer = evt.target.result;
+            const extractedCode = extractMetadataFromPNGBuffer(buffer, "bsaSashCode");
+
+            if (extractedCode) {
+              importSashCode(extractedCode);
+              alert("Successfully loaded sash layout from image metadata!");
+            } else {
+              alert("No saved sash metadata code found inside this image!");
+            }
+            imageUploadInput.value = ''; // Reset file input
+          };
+          reader.readAsArrayBuffer(file);
+        });
+      }
+
       if (flipBtn) {
         flipBtn.addEventListener('click', () => { isFlipped = !isFlipped; drawSash(); });
       }
@@ -650,14 +772,26 @@
         });
       }
 
+      // PNG Export with Baked Metadata
       if (downloadBtn) {
         downloadBtn.addEventListener('click', () => {
           drawSash(true);
-          const link = document.createElement('a');
-          link.download = 'my-merit-badge-sash.png';
-          link.href = canvas.toDataURL('image/png');
-          link.click();
-          drawSash(false);
+          const code = exportSashCode();
+
+          canvas.toBlob(async (blob) => {
+            const arrayBuffer = await blob.arrayBuffer();
+            const modifiedBuffer = injectMetadataIntoPNGBuffer(arrayBuffer, "bsaSashCode", code);
+            const finalBlob = new Blob([modifiedBuffer], { type: 'image/png' });
+            
+            const url = URL.createObjectURL(finalBlob);
+            const link = document.createElement('a');
+            link.download = 'my-merit-badge-sash.png';
+            link.href = url;
+            link.click();
+
+            URL.revokeObjectURL(url);
+            drawSash(false);
+          }, 'image/png');
         });
       }
 
