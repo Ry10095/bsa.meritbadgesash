@@ -7,6 +7,11 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- QR Code Generation & Scanning Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+
   <style>
     body { font-family: 'Inter', sans-serif; }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -16,6 +21,9 @@
   </style>
 </head>
 <body class="bg-stone-900 text-stone-800 min-h-screen flex flex-col items-center justify-start p-2 sm:p-4">
+
+  <!-- Hidden container for offscreen QR code generator -->
+  <div id="qrcode-temp" class="hidden"></div>
 
   <!-- Header -->
   <header class="w-full max-w-6xl mb-3 flex items-center justify-between bg-stone-800 text-white p-4 rounded-xl shadow-md border border-stone-700">
@@ -36,9 +44,9 @@
         <i class="fa-solid fa-file-import"></i> Load Code
       </button>
       <button id="image-read-btn" class="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-xs font-semibold shadow transition flex items-center gap-1.5">
-        <i class="fa-solid fa-file-image"></i> Image Read
+        <i class="fa-solid fa-qrcode"></i> Image Read
       </button>
-      <input type="file" id="image-upload-input" accept="image/png" class="hidden">
+      <input type="file" id="image-upload-input" accept="image/png, image/jpeg, image/webp" class="hidden">
     </div>
   </header>
 
@@ -99,7 +107,6 @@
     const ACTIVE_ROWS = 16;
     const TOTAL_SLOTS = ACTIVE_ROWS * COLS;
 
-    // All badges sorted alphabetically with clean variant definitions
     const MERIT_BADGES = [
       { id: "american_business", name: "American Business", imageUrl: "mbs/AmericanBusiness-1.webp" },
       { id: "american_cultures", name: "American Cultures", imageUrl: "mbs/AmericanCultures.webp" },
@@ -281,7 +288,7 @@
         img.crossOrigin = "anonymous";
         img.onload = () => {
           loadedImages[badge.id] = img;
-          drawSash();
+          drawSashOnContext();
           renderBadgePalette(document.getElementById('search-input')?.value || '');
         };
         img.src = badge.imageUrl;
@@ -292,7 +299,7 @@
             vImg.crossOrigin = "anonymous";
             vImg.onload = () => {
               loadedImages[variant.id] = vImg;
-              drawSash();
+              drawSashOnContext();
               renderBadgePalette(document.getElementById('search-input')?.value || '');
             };
             vImg.src = variant.imageUrl;
@@ -301,24 +308,24 @@
       });
     }
 
-    function getSlotCoordinates(slotIndex) {
-      const canvas = document.getElementById('sash-canvas');
-      const w = canvas ? canvas.width : 450;
+    function getSlotCoordinates(slotIndex, customWidth = 450) {
       const col = slotIndex % COLS;
       const row = Math.floor(slotIndex / COLS) + START_ROW;
       const topMargin = 120;
       const rowHeight = 88;
       const colWidth = 100;
-      const startX = (w - (COLS * colWidth)) / 2 + (colWidth / 2);
+      const startX = (customWidth - (COLS * colWidth)) / 2 + (colWidth / 2);
       return { x: startX + (col * colWidth), y: topMargin + (row * rowHeight), radius: 36 };
     }
 
-    function drawSash(isExporting = false) {
+    // Generic drawing function accepting any canvas context (screen or 3x offscreen)
+    function drawSashOnContext(ctx = null, isExporting = false) {
       const canvas = document.getElementById('sash-canvas');
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-      const w = canvas.width;
-      const h = canvas.height;
+      if (!ctx && canvas) ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      const w = 450;
+      const h = 1850;
 
       ctx.clearRect(0, 0, w, h);
 
@@ -355,11 +362,10 @@
       ctx.restore();
 
       for (let i = 0; i < TOTAL_SLOTS; i++) {
-        const { x, y, radius } = getSlotCoordinates(i);
+        const { x, y, radius } = getSlotCoordinates(i, w);
         const placedBadgeId = placedBadges[i];
 
         if (placedBadgeId && loadedImages[placedBadgeId]) {
-          // Cleanly render placed badge image without any overlapping outline ring
           ctx.save();
           ctx.beginPath();
           ctx.arc(x, y, radius, 0, Math.PI * 2);
@@ -369,7 +375,6 @@
           ctx.drawImage(img, x - radius, y - radius, radius * 2, radius * 2);
           ctx.restore();
         } else if (!isExporting) {
-          // Render empty slot indicator and border outline only when slot is empty
           ctx.save();
           ctx.beginPath();
           ctx.arc(x, y, radius, 0, Math.PI * 2);
@@ -388,7 +393,7 @@
       }
 
       const countTag = document.getElementById('badge-count-tag');
-      if (countTag) {
+      if (countTag && !isExporting) {
         const count = placedBadges.filter(Boolean).length;
         countTag.textContent = `${count} / ${TOTAL_SLOTS} Badges`;
       }
@@ -410,7 +415,6 @@
           isAnyPlaced ? 'bg-stone-100 border-stone-200 opacity-60' : 'bg-white hover:bg-stone-50 border-stone-200 hover:border-emerald-600 shadow-sm hover:shadow'
         }`;
 
-        // 3-Dots Variant Selection Menu Button with Image Thumbnails
         if (badge.variants && badge.variants.length > 0) {
           const dotsBtn = document.createElement('button');
           dotsBtn.className = 'absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-stone-400 hover:text-stone-800 rounded-full hover:bg-stone-100 transition z-20';
@@ -424,7 +428,6 @@
           popupTitle.textContent = 'Select Variant';
           popup.appendChild(popupTitle);
 
-          // Standard Option with Image Thumbnail
           const defaultOption = document.createElement('div');
           defaultOption.className = 'flex items-center gap-2 p-1.5 rounded-lg hover:bg-emerald-700 transition cursor-pointer mb-1';
           const stdImgSrc = loadedImages[badge.id]?.src || '';
@@ -442,8 +445,7 @@
           });
           popup.appendChild(defaultOption);
 
-          // Variant Options with Image Thumbnails
-          badge.variants.forEach((variant, vIdx) => {
+          badge.variants.forEach((variant) => {
             const option = document.createElement('div');
             option.className = 'flex items-center gap-2 p-1.5 rounded-lg hover:bg-emerald-700 transition cursor-pointer';
             const varImgSrc = loadedImages[variant.id]?.src || '';
@@ -488,7 +490,6 @@
           imgContainer.appendChild(placeholder);
         }
 
-        // Full multi-line title container without text clipping ellipsis
         const title = document.createElement('span');
         title.className = 'text-xs font-semibold text-center text-stone-800 leading-tight whitespace-normal px-1';
         title.textContent = placedVariant ? placedVariant.name : badge.name;
@@ -521,11 +522,10 @@
         if (anyEmpty !== -1) selectedSlotIndex = anyEmpty;
       }
 
-      drawSash();
+      drawSashOnContext();
       renderBadgePalette(document.getElementById('search-input')?.value || '');
     }
 
-    // Pure 4-digit variant-aware Code Logic (192 characters)
     function exportSashCode() {
       return placedBadges.map(badgeId => {
         if (!badgeId) return "0000";
@@ -547,7 +547,7 @@
     }
 
     function importSashCode(codeString) {
-      codeString = codeString.trim();
+      codeString = codeString ? codeString.trim() : '';
       
       if (codeString.length !== TOTAL_SLOTS * 4) {
         alert("Invalid sash code length! Expected exactly 192 characters.");
@@ -575,103 +575,26 @@
         }
       }
 
-      drawSash();
+      drawSashOnContext();
       renderBadgePalette(document.getElementById('search-input')?.value || '');
     }
 
-    // --- PNG Binary Metadata Reader / Writer Helpers ---
-
-    const crcTable = [];
-    for (let n = 0; n < 256; n++) {
-      let c = n;
-      for (let k = 0; k < 8; k++) {
-        c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
-      }
-      crcTable[n] = c;
-    }
-    function calculateCRC(buf) {
-      let crc = 0xFFFFFFFF;
-      for (let i = 0; i < buf.length; i++) {
-        crc = crcTable[(crc ^ buf[i]) & 0xFF] ^ (crc >>> 8);
-      }
-      return (crc ^ 0xFFFFFFFF) >>> 0;
-    }
-
-    function injectMetadataIntoPNGBuffer(buffer, key, value) {
-      const u8 = new Uint8Array(buffer);
-      if (u8[0] !== 0x89 || u8[1] !== 0x50 || u8[2] !== 0x4E || u8[3] !== 0x47) return buffer;
-
-      const encoder = new TextEncoder();
-      const keyBuf = encoder.encode(key);
-      const valBuf = encoder.encode(value);
+    // Helper: Generate QR Data URL using qrcode.js
+    function generateQRCodeDataURL(text) {
+      const container = document.getElementById('qrcode-temp');
+      container.innerHTML = '';
       
-      const data = new Uint8Array(keyBuf.length + 1 + valBuf.length);
-      data.set(keyBuf, 0);
-      data[keyBuf.length] = 0;
-      data.set(valBuf, keyBuf.length + 1);
+      new QRCode(container, {
+        text: text,
+        width: 300,
+        height: 300,
+        correctLevel: QRCode.CorrectLevel.M
+      });
 
-      const chunkType = new Uint8Array([116, 69, 120, 84]); // 'tEXt'
-      const len = data.length;
-
-      const chunkBuf = new Uint8Array(4 + 4 + len + 4);
-      const view = new DataView(chunkBuf.buffer);
-      view.setUint32(0, len, false);
-      chunkBuf.set(chunkType, 4);
-      chunkBuf.set(data, 8);
-
-      const crcTarget = new Uint8Array(4 + len);
-      crcTarget.set(chunkType, 0);
-      crcTarget.set(data, 4);
-      const crc = calculateCRC(crcTarget);
-      view.setUint32(8 + len, crc, false);
-
-      let offset = 8;
-      let insertPos = u8.length - 12;
-      
-      while (offset < u8.length) {
-        const length = new DataView(buffer).getUint32(offset, false);
-        const type = String.fromCharCode(u8[offset+4], u8[offset+5], u8[offset+6], u8[offset+7]);
-        if (type === 'IEND') {
-          insertPos = offset;
-          break;
-        }
-        offset += 12 + length;
-      }
-
-      const out = new Uint8Array(u8.length + chunkBuf.length);
-      out.set(u8.subarray(0, insertPos), 0);
-      out.set(chunkBuf, insertPos);
-      out.set(u8.subarray(insertPos), insertPos + chunkBuf.length);
-
-      return out.buffer;
-    }
-
-    function extractMetadataFromPNGBuffer(buffer, key) {
-      const u8 = new Uint8Array(buffer);
-      const view = new DataView(buffer);
-      let offset = 8;
-
-      const decoder = new TextDecoder();
-      while (offset < u8.length - 12) {
-        const length = view.getUint32(offset, false);
-        const type = decoder.decode(u8.subarray(offset + 4, offset + 8));
-
-        if (type === 'tEXt') {
-          const chunkData = u8.subarray(offset + 8, offset + 8 + length);
-          let nullIdx = -1;
-          for (let i = 0; i < chunkData.length; i++) {
-            if (chunkData[i] === 0) { nullIdx = i; break; }
-          }
-          if (nullIdx !== -1) {
-            const foundKey = decoder.decode(chunkData.subarray(0, nullIdx));
-            if (foundKey === key) {
-              return decoder.decode(chunkData.subarray(nullIdx + 1));
-            }
-          }
-        }
-        offset += 12 + length;
-      }
-      return null;
+      const qrCanvas = container.querySelector('canvas');
+      if (qrCanvas) return qrCanvas.toDataURL('image/png');
+      const qrImg = container.querySelector('img');
+      return qrImg ? qrImg.src : '';
     }
 
     window.onload = function() {
@@ -695,10 +618,10 @@
           const clickY = (e.clientY - rect.top) * scaleY;
 
           for (let i = 0; i < TOTAL_SLOTS; i++) {
-            const { x, y, radius } = getSlotCoordinates(i);
+            const { x, y, radius } = getSlotCoordinates(i, canvas.width);
             if (Math.hypot(clickX - x, clickY - y) <= radius + 5) {
               selectedSlotIndex = i;
-              drawSash();
+              drawSashOnContext();
               break;
             }
           }
@@ -713,7 +636,7 @@
         clearSlotBtn.addEventListener('click', () => {
           if (selectedSlotIndex >= 0 && selectedSlotIndex < TOTAL_SLOTS) {
             placedBadges[selectedSlotIndex] = null;
-            drawSash();
+            drawSashOnContext();
             renderBadgePalette(searchInput ? searchInput.value : '');
           }
         });
@@ -734,10 +657,42 @@
         });
       }
 
-      if (imageReadBtn && imageUploadInput) {
-        imageReadBtn.addEventListener('click', () => {
-          imageUploadInput.click();
+      // --- HIGH-RES 3X CANVAS EXPORT WITH CORNER QR CODE STAMP ---
+      if (downloadBtn) {
+        downloadBtn.addEventListener('click', () => {
+          const code = exportSashCode();
+          const scale = 3;
+
+          const exportCanvas = document.createElement('canvas');
+          exportCanvas.width = 450 * scale;   // 1350px
+          exportCanvas.height = 1850 * scale; // 5550px
+          const ctx = exportCanvas.getContext('2d');
+          
+          ctx.scale(scale, scale);
+
+          // 1. Render main sash layout at standard coordinates onto 3x scaled canvas
+          drawSashOnContext(ctx, true);
+
+          // 2. Generate and stamp 100x100 visual QR code in bottom margin
+          const qrDataUrl = generateQRCodeDataURL(code);
+          const qrImg = new Image();
+          qrImg.onload = () => {
+            // Positioned at bottom right corner (x = 320, y = 1710, size = 100px)
+            ctx.drawImage(qrImg, 320, 1710, 100, 100);
+
+            // 3. Trigger PNG Download
+            const link = document.createElement('a');
+            link.download = 'my-merit-badge-sash.png';
+            link.href = exportCanvas.toDataURL('image/png');
+            link.click();
+          };
+          qrImg.src = qrDataUrl;
         });
+      }
+
+      // --- QR CODE SCANNER USING jsQR LIBRARY ---
+      if (imageReadBtn && imageUploadInput) {
+        imageReadBtn.addEventListener('click', () => imageUploadInput.click());
 
         imageUploadInput.addEventListener('change', (e) => {
           const file = e.target.files[0];
@@ -745,53 +700,43 @@
 
           const reader = new FileReader();
           reader.onload = function(evt) {
-            const buffer = evt.target.result;
-            const extractedCode = extractMetadataFromPNGBuffer(buffer, "bsaSashCode");
+            const img = new Image();
+            img.onload = function() {
+              const scanCanvas = document.createElement('canvas');
+              scanCanvas.width = img.width;
+              scanCanvas.height = img.height;
+              const scanCtx = scanCanvas.getContext('2d');
+              scanCtx.drawImage(img, 0, 0);
 
-            if (extractedCode) {
-              importSashCode(extractedCode);
-              alert("Successfully loaded sash layout from image metadata!");
-            } else {
-              alert("No saved sash metadata code found inside this image!");
-            }
-            imageUploadInput.value = '';
+              const imageData = scanCtx.getImageData(0, 0, scanCanvas.width, scanCanvas.height);
+              
+              // Scan for QR code using jsQR
+              const qrResult = jsQR(imageData.data, imageData.width, imageData.height);
+
+              if (qrResult && qrResult.data) {
+                importSashCode(qrResult.data);
+                alert("Successfully loaded sash layout from embedded QR Code!");
+              } else {
+                alert("No readable sash QR code detected in this image!");
+              }
+              imageUploadInput.value = '';
+            };
+            img.src = evt.target.result;
           };
-          reader.readAsArrayBuffer(file);
+          reader.readAsDataURL(file);
         });
       }
 
       if (flipBtn) {
-        flipBtn.addEventListener('click', () => { isFlipped = !isFlipped; drawSash(); });
+        flipBtn.addEventListener('click', () => { isFlipped = !isFlipped; drawSashOnContext(); });
       }
 
       if (resetBtn) {
         resetBtn.addEventListener('click', () => {
           placedBadges.fill(null);
           selectedSlotIndex = 0;
-          drawSash();
+          drawSashOnContext();
           renderBadgePalette(searchInput ? searchInput.value : '');
-        });
-      }
-
-      if (downloadBtn) {
-        downloadBtn.addEventListener('click', () => {
-          drawSash(true);
-          const code = exportSashCode();
-
-          canvas.toBlob(async (blob) => {
-            const arrayBuffer = await blob.arrayBuffer();
-            const modifiedBuffer = injectMetadataIntoPNGBuffer(arrayBuffer, "bsaSashCode", code);
-            const finalBlob = new Blob([modifiedBuffer], { type: 'image/png' });
-            
-            const url = URL.createObjectURL(finalBlob);
-            const link = document.createElement('a');
-            link.download = 'my-merit-badge-sash.png';
-            link.href = url;
-            link.click();
-
-            URL.revokeObjectURL(url);
-            drawSash(false);
-          }, 'image/png');
         });
       }
 
@@ -799,7 +744,7 @@
         document.querySelectorAll('#badge-palette .popup-menu').forEach(p => p.classList.add('hidden'));
       });
 
-      drawSash();
+      drawSashOnContext();
       renderBadgePalette();
       loadBadgeImages();
     };
