@@ -359,6 +359,7 @@
         const placedBadgeId = placedBadges[i];
 
         if (placedBadgeId && loadedImages[placedBadgeId]) {
+          // Cleanly render placed badge image without any overlapping outline ring
           ctx.save();
           ctx.beginPath();
           ctx.arc(x, y, radius, 0, Math.PI * 2);
@@ -367,13 +368,8 @@
           const img = loadedImages[placedBadgeId];
           ctx.drawImage(img, x - radius, y - radius, radius * 2, radius * 2);
           ctx.restore();
-
-          ctx.beginPath();
-          ctx.arc(x, y, radius, 0, Math.PI * 2);
-          ctx.strokeStyle = '#5a785c';
-          ctx.lineWidth = 2;
-          ctx.stroke();
         } else if (!isExporting) {
+          // Render empty slot indicator and border outline only when slot is empty
           ctx.save();
           ctx.beginPath();
           ctx.arc(x, y, radius, 0, Math.PI * 2);
@@ -585,7 +581,6 @@
 
     // --- PNG Binary Metadata Reader / Writer Helpers ---
 
-    // CRC32 table calculator for PNG chunk integrity
     const crcTable = [];
     for (let n = 0; n < 256; n++) {
       let c = n;
@@ -602,25 +597,22 @@
       return (crc ^ 0xFFFFFFFF) >>> 0;
     }
 
-    // Bake tEXt chunk into PNG ArrayBuffer right before IEND
     function injectMetadataIntoPNGBuffer(buffer, key, value) {
       const u8 = new Uint8Array(buffer);
-      // Verify PNG header signature
       if (u8[0] !== 0x89 || u8[1] !== 0x50 || u8[2] !== 0x4E || u8[3] !== 0x47) return buffer;
 
-      // Construct tEXt chunk content: key + \0 + value
       const encoder = new TextEncoder();
       const keyBuf = encoder.encode(key);
       const valBuf = encoder.encode(value);
+      
       const data = new Uint8Array(keyBuf.length + 1 + valBuf.length);
       data.set(keyBuf, 0);
-      data[keyBuf.length] = 0; // Null separator
+      data[keyBuf.length] = 0;
       data.set(valBuf, keyBuf.length + 1);
 
       const chunkType = new Uint8Array([116, 69, 120, 84]); // 'tEXt'
       const len = data.length;
 
-      // Assemble chunk buffer: [4 bytes length][4 bytes type][data][4 bytes CRC]
       const chunkBuf = new Uint8Array(4 + 4 + len + 4);
       const view = new DataView(chunkBuf.buffer);
       view.setUint32(0, len, false);
@@ -633,21 +625,31 @@
       const crc = calculateCRC(crcTarget);
       view.setUint32(8 + len, crc, false);
 
-      // Insert right before IEND (last 12 bytes of a standard PNG)
-      const iendPos = u8.length - 12;
+      let offset = 8;
+      let insertPos = u8.length - 12;
+      
+      while (offset < u8.length) {
+        const length = new DataView(buffer).getUint32(offset, false);
+        const type = String.fromCharCode(u8[offset+4], u8[offset+5], u8[offset+6], u8[offset+7]);
+        if (type === 'IEND') {
+          insertPos = offset;
+          break;
+        }
+        offset += 12 + length;
+      }
+
       const out = new Uint8Array(u8.length + chunkBuf.length);
-      out.set(u8.subarray(0, iendPos), 0);
-      out.set(chunkBuf, iendPos);
-      out.set(u8.subarray(iendPos), iendPos + chunkBuf.length);
+      out.set(u8.subarray(0, insertPos), 0);
+      out.set(chunkBuf, insertPos);
+      out.set(u8.subarray(insertPos), insertPos + chunkBuf.length);
 
       return out.buffer;
     }
 
-    // Extract tEXt chunk matching key from PNG ArrayBuffer
     function extractMetadataFromPNGBuffer(buffer, key) {
       const u8 = new Uint8Array(buffer);
       const view = new DataView(buffer);
-      let offset = 8; // Skip 8-byte PNG header
+      let offset = 8;
 
       const decoder = new TextDecoder();
       while (offset < u8.length - 12) {
@@ -667,7 +669,7 @@
             }
           }
         }
-        offset += 12 + length; // Move to next chunk
+        offset += 12 + length;
       }
       return null;
     }
@@ -732,7 +734,6 @@
         });
       }
 
-      // Image Read Button Action
       if (imageReadBtn && imageUploadInput) {
         imageReadBtn.addEventListener('click', () => {
           imageUploadInput.click();
@@ -753,7 +754,7 @@
             } else {
               alert("No saved sash metadata code found inside this image!");
             }
-            imageUploadInput.value = ''; // Reset file input
+            imageUploadInput.value = '';
           };
           reader.readAsArrayBuffer(file);
         });
@@ -772,7 +773,6 @@
         });
       }
 
-      // PNG Export with Baked Metadata
       if (downloadBtn) {
         downloadBtn.addEventListener('click', () => {
           drawSash(true);
